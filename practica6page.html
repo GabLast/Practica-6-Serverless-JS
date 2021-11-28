@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <!-- Required Stylesheets -->
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css" />
+
+    <!-- Required scripts -->
+    <script src="https://unpkg.com/vue"></script>
+    <script src="https://unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
+    <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <title>Reservas de Laboratorio</title>
+</head>
+
+<body>
+
+    <div class="container" id="app">
+        <div>
+            <br>
+            <a href="practica6page.html">
+                <img src="https://practicaweb6.s3.amazonaws.com/pucmmLogo.png" alt="pucmm-logo-unloaded" width="240px" heigth="120px">
+            </a>
+        </div>
+        <div class="row mt-3">
+            <div class="col-sm">
+                <h1 class="text-center">Reservas de Laboratorio Serverless</h1><br>
+                <div>
+                    <b-button variant="outline-primary" v-b-modal.modal-1 @click="insertReserva">Agregar reserva</b-button>
+                    <b-button variant="outline-success" @click="listarReservas">Listar todas las reservas</b-button>
+                    <b-button variant="outline-warning" @click="listarReservasActivas">Listar Reservas Activas</b-button>
+                    <b-button variant="outline-secondary" v-b-modal.filtrofechas @click="limpiarFechas">Filtrar Por Fecha</b-button>
+                </div>
+                <div>
+                    <b-alert v-if="!insert" variant="danger" dismissible show>
+                        Dismissible Alert!
+                    </b-alert>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-sm">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Laboratorio</th>
+                            <th scope="col">Fecha y Hora</th>
+                            <th scope="col">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="reserva in reservas">
+                            <td>{{reserva.id}}</td>
+                            <td>{{reserva.nombre}}</td>
+                            <td>{{reserva.lab}}</td>
+                            <td>Fecha: {{reserva.fecha}}
+                                <br>Hora: {{reserva.horaInicio}} - {{reserva.horaFin}}</td>
+                            <td>
+                                <button class="btn btn-secondary" @click="updateReserva(reserva)">Editar</button> |
+                                <button class="btn btn-danger" @click="deleteReserva(reserva)">Eliminar</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <b-modal id="modal-1" hide-footer :title="titulo">
+            <b-form @submit.prevent="insertReserva" @reset="limpiar">
+
+                <!-- ID       -->
+                <b-form-group label="ID:" label-for="idcomponent">
+                    <b-form-input id="idcomponent" v-if="!editando" v-model="reserva.id" type="number" required placeholder="ID"></b-form-input>
+                    <b-form-input id="idcomponent" v-else v-model="reservaEdit.id" type="number" readonly required placeholder="ID"></b-form-input>
+                </b-form-group>
+                <br>
+                <!-- Nombre            -->
+                <b-form-group label="Nombre:" label-for="namecomponent">
+                    <b-form-input id="namecomponent" v-if="!editando" v-model="reserva.nombre" type="text" required placeholder="Nombre"></b-form-input>
+                    <b-form-input id="namecomponent" v-else v-model="reservaEdit.nombre" type="text" required placeholder="Nombre"></b-form-input>
+                </b-form-group>
+                <br>
+                <!-- Laboratorio            -->
+                <b-form-group label="Laboratorio:" label-for="labcomp">
+                    <!-- <b-form-input id="labcomp" v-if="!editando" v-model="reserva.lab" type="text" required placeholder="Laboratorio"></b-form-input>
+                    <b-form-input id="labcomp" v-else v-model="reservaEdit.lab" type="text" required placeholder="Laboratorio"></b-form-input> -->
+                    <b-form-select v-if="!editando" v-model="reserva.lab" :options="options"></b-form-select>
+                    <b-form-select v-else v-model="reservaEdit.lab" :options="options"></b-form-select>
+                </b-form-group>
+                <br>
+                <!-- correo            -->
+                <b-form-group label="Correo:" label-for="Correocomp">
+                    <b-form-input id="Correocomp" v-if="!editando" v-model="reserva.correo" type="text" required placeholder="Correo"></b-form-input>
+                    <b-form-input id="Correocomp" v-else v-model="reservaEdit.correo" type="text" required placeholder="Correo"></b-form-input>
+                </b-form-group>
+                <br>
+                <!-- Fecha            -->
+                <b-form-group label="Fecha:" label-for="datecomp">
+                    <b-form-input id="datecomp" v-if="!editando" v-model="reserva.fecha" type="date" required placeholder="Fecha"></b-form-input>
+                    <b-form-input id="datecomp" v-else v-model="reservaEdit.fecha" type="date" required placeholder="Fecha"></b-form-input>
+                </b-form-group>
+                <br>
+                <!-- Hora Inicio            -->
+                <b-form-group label="Hora Inicio:" label-for="hourStartcomp">
+                    <b-form-input id="hourStartcomp" v-if="!editando" v-model="reserva.horaInicio" type="number" min=8 max=21 required placeholder="Hora Inicio (24h)"></b-form-input>
+                    <b-form-input id="hourStartcomp" v-else v-model="reservaEdit.horaInicio" type="number" min=8 max=21 required placeholder="Hora Inicio (24h)"></b-form-input>
+                </b-form-group>
+                <br>
+                <!-- Hora Final            -->
+                <b-form-group label="Hora Fin:" label-for="hourEndcomp">
+                    <b-form-input id="hourEndcomp" v-if="!editando" v-model="reserva.horaFin" type="number" min=9 max=22 required placeholder="Hora Fin (24h)"></b-form-input>
+                    <b-form-input id="hourEndcomp" v-else v-model="reservaEdit.horaFin" type="number" min=9 max=22 required placeholder="Hora Fin (24h)"></b-form-input>
+                </b-form-group>
+                <br>
+                <b-row>
+                    <b-col md="9">
+                        <b-button type="reset" variant="danger">Limpiar</b-button>
+                    </b-col>
+                    <b-col md="2">
+                        <b-button type="submit" v-if="!editando" variant="primary">Registrar</b-button>
+                        <b-button v-else variant="primary" @click="editBtnClick()">Editar</b-button>
+                    </b-col>
+                </b-row>
+            </b-form>
+        </b-modal>
+
+        <b-modal id="filtrofechas" hide-footer :title="titulo">
+            <b-form @submit.prevent="listarRangoFecha" @reset="limpiarFechas">
+
+                <!-- Fecha inicial       -->
+                <b-form-group label="Fecha Inicial" label-for="startDate">
+                    <b-form-input id="startDate" v-model="rango.fechaInicio" type="date" placeholder="Fecha Inicial" required></b-form-input>
+                </b-form-group>
+
+                <br>
+                <!-- Fecha final            -->
+                <b-form-group label="Fecha Final:" label-for="endDate">
+                    <b-form-input id="endDate" v-model="rango.fechaFin" type="date" placeholder="Fecha Final" required></b-form-input>
+                </b-form-group>
+                <br>
+                <b-row>
+                    <b-col md="9">
+                        <b-button type="reset" variant="danger">Limpiar</b-button>
+                    </b-col>
+                    <b-col md="2">
+                        <b-button type="submit" variant="primary">Filtrar</b-button>
+                    </b-col>
+                </b-row>
+            </b-form>
+        </b-modal>
+    </div>
+
+    <!-- Libreria Vuejs -->
+    <script>
+        var URL_API = "https://68cza8jbz9.execute-api.us-east-1.amazonaws.com/test";
+
+        var app = new Vue({
+
+            el: '#app',
+
+            data: {
+                titulo: "Creación de Reservas",
+                editando: false,
+                reserva: {
+                    "id": "",
+                    "nombre": "",
+                    "correo": "",
+                    "lab": "",
+                    "fecha": "",
+                    "horaInicio": "",
+                    "horaFin": ""
+                },
+                reservaEdit: {
+                    "id": "",
+                    "nombre": "",
+                    "correo": "",
+                    "lab": "",
+                    "fecha": "",
+                    "horaInicio": "",
+                    "horaFin": ""
+                },
+                rango: {
+                    "fechaInicio": "",
+                    "fechaFin": ""
+                },
+                reservas: [],
+                resAux: [],
+                insert: true,
+                options: [{
+                    value: "TE-01",
+                    text: "TE-01"
+                }, {
+                    value: "TE-02",
+                    text: "TE-02"
+                }, {
+                    value: "TE-03",
+                    text: "TE-03"
+                }, {
+                    value: "TE-04",
+                    text: "TE-04"
+                }]
+            },
+
+            created: function() { //representa la función de inicialización Vuejs
+
+                console.log("Inicializando el proyecto en Vuejs: ", this.titulo);
+            },
+
+            mounted: function() {
+
+                this.$nextTick(function() { //garantizo que todos los elementos están renderizados.
+                    console.log("Cargando todo el render del proyecto");
+                    this.listarReservas();
+                });
+            },
+
+            methods: {
+
+                listarReservas: function() {
+                    console.log("Cargando lista de Reservas");
+                    axios.get(URL_API + "/reservas").then(response => {
+
+                        console.log("Recuperando información del servidor");
+                        // console.log("Objeto: " + JSON.stringify(response.data));
+
+                        this.reservas = response.data;
+                    }).catch(error => {
+                        console.log(error);
+                    });
+                },
+
+
+                insertReserva: function() {
+                    console.log("datos para almacenar: ", this.reserva);
+
+                    this.$bvModal.show('modal-1');
+                    this.editando = false;
+
+                    //creando
+                    axios.post(URL_API + "/reservas/", this.reserva).then(response => {
+                        console.log("Returned value: " + JSON.stringify(response));
+                        this.limpiar();
+                        this.listarReservas();
+                    }).catch(error => console.log(error));
+
+
+                    this.$bvModal.hide('modal-1');
+                },
+
+                updateReserva: function(edit) {
+                    console.log("Editando Reserva ID: ", edit.id);
+
+                    this.$bvModal.show('modal-1');
+                    this.editando = true;
+                    this.reservaEdit = edit;
+                },
+
+                editBtnClick: function() {
+
+                    axios.put(URL_API + "/reservas/" + this.reservaEdit.id, this.reservaEdit).then(response => {
+                        console.log("Returned value: " + response);
+                        this.limpiar();
+                        this.listarReservas();
+                    }).catch(error => console.log(error));
+
+                    this.$bvModal.hide('modal-1');
+                },
+
+                deleteReserva: function(reservaDelete) {
+                    console.log("Eliminando Reserva ID: ", reservaDelete.id);
+
+                    axios.delete(URL_API + "/reservas/" + reservaDelete.id).then(response => {
+                        console.log("Returned value: " + response);
+                        this.listarReservas();
+                    }).catch(error => console.log(error));
+                },
+
+                listarReservasActivas: function() {
+                    console.log("Listar reservas activas");
+
+                    axios.get(URL_API + "/reservas").then(response => {
+
+                        this.resAux = response.data;
+                        this.reservas = [];
+
+                        this.resAux.forEach(element => {
+
+                            if (Date.parse(element.fecha) >= new Date()) {
+                                this.reservas.push(element);
+                            }
+                        });
+                    }).catch(error => {
+                        console.log(error);
+                    });
+
+                    this.$bvModal.hide('filtrofechas');
+                },
+
+                listarRangoFecha: function() {
+                    console.log("Listar en rango de fechas");
+
+                    axios.get(URL_API + "/reservas").then(response => {
+
+                        this.resAux = response.data;
+                        console.log("resAux" + this.resAux);
+
+                        this.reservas = [];
+
+                        this.resAux.forEach(element => {
+
+                            // console.log(JSON.stringify(element.fecha));
+
+                            if (element.fecha >= this.rango.fechaInicio && element.fecha <= this.rango.fechaFin) {
+                                this.reservas.push(element);
+                                // console.log("Element: " + JSON.stringify(element));
+                            }
+                        });
+                    }).catch(error => {
+                        console.log(error);
+                    });
+
+                    this.$bvModal.hide('filtrofechas');
+                },
+
+                limpiar: function() {
+                    this.reserva.id = '';
+                    this.reserva.nombre = '';
+                    this.reserva.correo = '';
+                    this.reserva.lab = '';
+                    this.reserva.fecha = '';
+                    this.reserva.horaInicio = '';
+                    this.reserva.horaFin = '';
+                },
+
+                limpiarFechas: function() {
+                    this.rango.fechaInicio = '';
+                    this.rango.fechaFin = '';
+                }
+
+            }
+        });
+    </script>
+</body>
+
+</html>
