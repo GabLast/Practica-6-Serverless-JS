@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+    <title>P6 Serverless</title>
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -16,8 +17,6 @@
     <script src="https://unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
     <script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-
-    <title>Reservas de Laboratorio</title>
 </head>
 
 <body>
@@ -25,7 +24,7 @@
     <div class="container" id="app">
         <div>
             <br>
-            <a href="practica6page.html">
+            <a href="https://practicaweb6.s3.amazonaws.com/practica6page.html">
                 <img src="https://practicaweb6.s3.amazonaws.com/pucmmLogo.png" alt="pucmm-logo-unloaded" width="240px" heigth="120px">
             </a>
         </div>
@@ -40,7 +39,7 @@
                 </div>
                 <div>
                     <b-alert v-if="!insert" variant="danger" dismissible show>
-                        Dismissible Alert!
+                        Esta reserva no puede ser agregada debido a que ha llegado a su capacidad máxima
                     </b-alert>
                 </div>
             </div>
@@ -74,7 +73,7 @@
             </div>
         </div>
 
-        <b-modal id="modal-1" hide-footer :title="titulo">
+        <b-modal id="modal-1" hide-footer :title="tituloaux">
             <b-form @submit.prevent="insertReserva" @reset="limpiar">
 
                 <!-- ID       -->
@@ -133,7 +132,7 @@
             </b-form>
         </b-modal>
 
-        <b-modal id="filtrofechas" hide-footer :title="titulo">
+        <b-modal id="filtrofechas" hide-footer :title="titulo2">
             <b-form @submit.prevent="listarRangoFecha" @reset="limpiarFechas">
 
                 <!-- Fecha inicial       -->
@@ -169,6 +168,9 @@
 
             data: {
                 titulo: "Creación de Reservas",
+                titulo2: "Buscar por rango de fechas",
+                titulo3: "Editando Reserva",
+                tituloaux: "",
                 editando: false,
                 reserva: {
                     "id": "",
@@ -241,7 +243,7 @@
 
                 insertReserva: function() {
                     console.log("datos para almacenar: ", this.reserva);
-
+                    this.tituloaux = this.titulo;
                     this.$bvModal.show('modal-1');
                     this.editando = false;
 
@@ -262,6 +264,7 @@
                     this.$bvModal.show('modal-1');
                     this.editando = true;
                     this.reservaEdit = edit;
+                    this.tituloaux = this.titulo3;
                 },
 
                 editBtnClick: function() {
@@ -294,7 +297,9 @@
 
                         this.resAux.forEach(element => {
 
-                            if (Date.parse(element.fecha) >= new Date()) {
+                            let today = new Date();
+
+                            if (Date.parse(element.fecha) >= today) {
                                 this.reservas.push(element);
                             }
                         });

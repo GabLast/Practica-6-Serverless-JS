@@ -1,0 +1,9 @@
+reserva: {
+    "id": "",
+    "nombre": "",
+    "correo": "",
+    "lab": "",
+    "fecha": "",
+    "horaInicio": "",
+    "horaFin": ""
+}
